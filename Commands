@@ -1,0 +1,127 @@
+#Commands used for the simulation work-
+ACTIVATE CONDA-
+
+conda activate AmberTools22
+-----------------------------------------------------------------------
+making parameter files
+antechamber -i 5MC.pdb -fi pdb -o 5MC.mol2 -fo mol2 -c bcc -s 2
+#defining the atom types for DNA based on parm99.dat file 
+parmchk2 -i 5MC.mol2 -f mol2 -o 5MC.frcmod
+-----------------------------------------------------------------------
+tleap 
+#loading the force field parameters for DNA (DNA.OL15) and General Amber Force Field(gaff)
+source leaprc.DNA.OL15
+
+source leaprc.gaff
+-----------------------------------------------------------------------
+#generating parameters for modified bases
+5MC=loadmol2 5MC.mol2
+6MA=loadmol2 6MA.mol2
+2AA =loadmol2 2AA.mol2
+HMC=loadmol2 HMC.mol2
+HMU=loadmol2 HMU.mol2
+CAC=loadmol2 CAC.mol2
+5FU=loadmol2 5FU.mol2
+5FC=loadmol2 5FC.mol2
+-----------------------------------------------------------------------
+loadamberparams 5MC.frcmod
+loadamberparams 6MA.frcmod
+loadamberparams 2AA.frcmod
+loadamberparams HMC.frcmod
+loadamberparams HMU.frcmod
+loadamberparams CAC.frcmod
+loadamberparams 5FU.frcmod
+loadamberparams 5FC.frcmod
+-----------------------------------------------------------------------
+#saving the parameters library
+saveoff 5MC 5MC.lib
+saveoff 6MA 6MA.lib 
+saveoff 2AA 2AA.lib
+saveoff HMC HMC.lib
+saveoff HMU HMU.lib
+saveoff CAC CAC.lib
+saveoff 5FU 5FU.lib
+saveoff 5FC 5FC.lib
+-----------------------------------------------------------------------
+#saving the topology files for modified bases
+saveamberparm 5MC 5MC.prmtop 5MC.rst7 
+saveamberparm 6MA 6MA.prmtop 6MA.rst7 
+saveamberparm 2AA 2AA.prmtop 2AA.rst7 
+saveamberparm HMC HMC.prmtop HMC.rst7 
+saveamberparm HMU HMU.prmtop HMU.rst7 
+saveamberparm CAC CAC.prmtop CAC.rst7 
+saveamberparm 5FU 5FU.prmtop 5FU.rst7 
+saveamberparm 5FC 5FC.prmtop 5FC.rst7 
+
+-----------------------------------------------------------------------
+#Generating topology file for modified DNA sequence-
+tleap 
+source leaprc.DNA.OL15
+source leaprc.gaff 
+-----------------------------------------------------------------------
+#loading the parameter files for modified bases-
+loadamberparams 5MC.frcmod
+loadamberparams 6MA.frcmod
+loadamberparams 2AA.frcmod
+loadamberparams HMC.frcmod
+loadamberparams HMU.frcmod
+loadamberparams CAC.frcmod
+loadamberparams 5FU.frcmod
+loadamberparams 5FC.frcmod
+------------------------------------------------------------------------
+loadoff 5MC.lib
+loadoff 6MA.lib
+loadoff 2AA.lib
+loadoff HMC.lib
+loadoff HMU.lib
+loadoff CAC.lib
+loadoff 5FU.lib
+loadoff 5FC.lib
+------------------------------------------------------------------------
+#defining the connection points between modified bases and DNA strand
+#defining head and tail
+set 5MC head 5MC.1.P
+set 6MA head 6MA.1.P
+set 2AA head 2AA.1.P
+set HMC head HMC.1.P
+set HMU head HMU.1.P
+set CAC head CAC.1.P
+set 5FU head 5FU.1.P
+set 5FC head 5FC.1.P
+------------------------------------------------------------------------
+set 5MC tail 5MC.1.O3'
+set 6MA tail 6MA.1.O3'
+set 2AA tail 2AA.1.O3'
+set HMC tail HMC.1.O3'
+set HMU tail HMU.1.O3'
+set CAC tail CAC.1.O3'
+set 5FU tail 5FU.1.O3'
+set 5FC tail 5FC.1.O3'
+------------------------------------------------------------------------
+#Loading the Modified DNA structure
+model1=loadpdb dodecamer.pdb
+
+#bond model1.1.22 model1.2.23  --->USED WHEN SET HEAD TAIL IS NOT DONE
+------------------------------------------------------------------------
+source leaprc.water.tip3p
+addions 5FCDNA Na+ 0
+
+#solvatebox dna TIP3PBOX 8.0 or
+solvateoct DNA TIP3PBOX 8.0
+saveamberparm 5MCDNA 5MCDNA.prmtop 5MCDNA.rst7
+------------------------------------------------------------------------
+#running minimisation
+sander -O -i min1.in -o 5FCDNA_min1.out -p 5FCDNA.prmtop -c 5FCDNA.rst7 -r 5FCDNA_min1.ncrst -ref 5FCDNA.rst7
+
+sander -O -i min2.in -o 5FCDNA_min2.out -p 5FCDNA.prmtop -c 5FCDNA_min1.ncrst -r 5FCDNA_min2.ncrst
+--------------------------------------------------------------------------
+#generating pdb structure after minimization
+ambpdb -p 5FCDNA.prmtop -c 5FCDNA.rst7 > 5FCDNA_REF.pdb
+ambpdb -p 5FCDNA.prmtop -c 5FCDNA_min2.ncrst > 5FCDNA_min2.pdb
+VMD
+---------------------------------------------------------------------
+#heating and equilibration
+sander -O -i md1.in -o 5FCDNA_md1.out -p 5FCDNA.prmtop -c 5FCDNA_min2.ncrst -r 5FCDNA_md1.ncrst -x 5FCDNA_md1.nc -ref 5FCDNA_min2.ncrst
+sander -O -i md2.in -o 5FCDNA_md2.out -p 5FCDNA.prmtop -c 5FCDNA_md1.ncrst -r 5FCDNA_md2.ncrst -x 5FCDNA_md2.nc
+
+
